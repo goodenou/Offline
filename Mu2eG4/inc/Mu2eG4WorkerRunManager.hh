@@ -21,6 +21,7 @@
 
 // C++ includes
 #include <thread>
+#include <fstream>
 
 
 namespace art { class Event; }
@@ -51,7 +52,7 @@ namespace mu2e {
     void initializeUserActions(const G4ThreeVector& origin_in_world);
     void initializeRun(art::Event* art_event);
     void processEvent(art::Event*);
-    G4Event* generateEvt(G4int i_event);
+    G4Event* generateEvt(std::string i_event, std::string i_subrun, std::string i_run);
 
     inline bool workerRMInitialized() const { return m_managerInitialized; }
 
@@ -67,6 +68,8 @@ namespace mu2e {
     bool m_steppingVerbose;
     int m_mtDebugOutput;
     int rmvlevel_;
+    
+    std::ofstream myfile;
 
     std::unique_ptr<Mu2eG4PerThreadStorage> perThreadObjects_;
 
