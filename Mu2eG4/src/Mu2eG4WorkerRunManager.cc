@@ -86,6 +86,7 @@ namespace mu2e {
     m_steppingVerbose(true),
     m_mtDebugOutput(conf.debug().mtDebugOutput()),
     rmvlevel_(conf.debug().diagLevel()),
+    salt_(conf.salt()),
     perThreadObjects_(std::make_unique<Mu2eG4PerThreadStorage>()),
     masterRM(nullptr),
     workerID_(worker_ID),
@@ -100,16 +101,7 @@ namespace mu2e {
     steppingCuts_(createMu2eG4Cuts(conf.Mu2eG4SteppingOnlyCut.get<fhicl::ParameterSet>(), mu2elimits_)),
     commonCuts_(createMu2eG4Cuts(conf.Mu2eG4CommonCut.get<fhicl::ParameterSet>(), mu2elimits_))
   {
-    /*
-    stringstream ss;
-    ss << worker_ID;
-    string wID;
-    ss >> wID;
-    string filestring = "RNOUT" + wID + ".txt";
-    myfile.open (filestring);
-     */
-    
-    
+
     if (m_mtDebugOutput > 0) {
       G4cout << "WorkerRM on thread " << workerID_ << " is being created\n!";
       //to see random number seeds for each event and other verbosity, uncomment this
@@ -119,7 +111,6 @@ namespace mu2e {
 
   // Destructor of base is called automatically.  No need to do anything.
   Mu2eG4WorkerRunManager::~Mu2eG4WorkerRunManager(){
-    //myfile.close();
     
     if (m_mtDebugOutput > 0) {
       G4cout << "WorkerRM on thread " << workerID_ << " is being destroyed\n!";
@@ -326,21 +317,13 @@ namespace mu2e {
     
     if(eventHasToBeSeeded)
     {
-      std::string msg = "r" + i_run + "s" + i_subrun + "e" + i_event;
+      std::string msg = "r" + i_run + "s" + i_subrun + "e" + i_event + salt_;
 
       std::string hash_out = CryptoPP_Hash(msg);
       std::vector<std::string> randnumstrings = {hash_out.substr(0,8), hash_out.substr(8,8)};
-      //std::cout << "hashout = " << hash_out << std::endl;
-      
-      //std::cout << "randnumstrings[0] = " << randnumstrings[0] << std::endl;
-      //std::cout << "randnumstrings[1] = " << randnumstrings[1] << std::endl;
-     
+ 
       long rn1 = std::stol(randnumstrings[0],nullptr,16);
       long rn2 = std::stol(randnumstrings[1],nullptr,16);
-    
-      //std::cout << "rn1 = " << rn1 << std::endl;
-      //std::cout << "rn2 = " << rn2 << std::endl;
-      
       long seeds[3] = { rn1, rn2, 0 };
       G4Random::setTheSeeds(seeds,-1);
       runIsSeeded = true;

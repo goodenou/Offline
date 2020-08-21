@@ -21,7 +21,6 @@
 
 // C++ includes
 #include <thread>
-#include <fstream>
 
 
 namespace art { class Event; }
@@ -68,8 +67,7 @@ namespace mu2e {
     bool m_steppingVerbose;
     int m_mtDebugOutput;
     int rmvlevel_;
-    
-    std::ofstream myfile;
+    std::string salt_;
 
     std::unique_ptr<Mu2eG4PerThreadStorage> perThreadObjects_;
 
