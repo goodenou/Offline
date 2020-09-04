@@ -255,6 +255,7 @@ mainlib = helper.make_mainlib ( [
         'boost_system',
         'tbb',
         'pthread',
+        'libcryptopp',
     ],
                                 [  G4CPPFLAGS, G4GS_CPPFLAGS, G4GV_CPPFLAGS ],
                                 [ g4LibInc, vgcLibInc ]
@@ -293,6 +294,7 @@ helper.make_plugins( [
     'boost_system',
     'tbb',
     'pthread',
+    'libcryptopp',
     ],
                      [],
                      [ G4CPPFLAGS, G4GS_CPPFLAGS, G4GV_CPPFLAGS ],
