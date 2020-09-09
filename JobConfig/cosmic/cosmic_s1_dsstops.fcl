@@ -15,7 +15,8 @@ BEGIN_PROLOG
 crvStage1End: 
 {
    type: inVolume
-   pars: [DSOuterCryoShell, DSInnerCryoShell, DSFront, DSUpEndWallShell, TS5OuterCryoShell, TS5CryoInsVac, TS5Vacuum, Coll51, DS1Vacuum, DS2Vacuum, DS3Vacuum]
+#   pars: [DSOuterCryoShell, DSInnerCryoShell, DSFront, DSUpEndWallShell, TS5OuterCryoShell, TS5CryoInsVac, TS5Vacuum, Coll51, DS1Vacuum, DS2Vacuum, DS3Vacuum]
+   pars: [DSOuterCryoShell, DSInnerCryoShell, Coll51, DS1Vacuum, DS2Vacuum, DS3Vacuum]
    write: crvStage1
 }
 
