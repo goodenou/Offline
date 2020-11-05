@@ -105,7 +105,7 @@ namespace mu2e {
     if (m_mtDebugOutput > 0) {
       G4cout << "WorkerRM on thread " << workerID_ << " is being created\n!";
       //to see random number seeds for each event and other verbosity, uncomment this
-      SetPrintProgress(1);
+      //SetPrintProgress(1);
     }
   }
 
@@ -367,7 +367,7 @@ namespace mu2e {
     
     if(printModulo > 0 && anEvent->GetEventID()%printModulo == 0 ) {
       G4cout << "--> Event " << anEvent->GetEventID() << " starts";
-      if(eventHasToBeSeeded) {
+      if(eventHasToBeSeeded && m_mtDebugOutput > 1) {
         G4cout << " with initial seeds (" << s1 << "," << s2 << ")";
       }
       G4cout << "." << G4endl;
