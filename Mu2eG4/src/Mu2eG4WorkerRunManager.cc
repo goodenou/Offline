@@ -11,6 +11,16 @@
 
 //Framework includes
 #include "cetlib_except/exception.h"
+#include "cstddef"
+
+//#include "/mu2e/app/users/goodenou/cryptopp/sha3.h"
+//#include "/mu2e/app/users/goodenou/cryptopp/hex.h"
+//#include "/mu2e/app/users/goodenou/cryptopp/files.h"
+#include "sha.h"
+#include "hex.h"
+#include "files.h"
+
+#include <string>
 
 //Mu2e includes
 #include "Mu2eG4/inc/Mu2eG4WorkerRunManager.hh"
@@ -48,14 +58,24 @@ using namespace std;
 
 namespace {
   tbb::atomic<int> thread_counter{0};
-
   int get_new_thread_index() { return thread_counter++; }
-
   thread_local int s_thread_index = get_new_thread_index();
-
   int getThreadIndex() { return s_thread_index; }
-
-
+  
+  
+  string CryptoPP_Hash(const string msg){
+    
+    CryptoPP::SHA3_224 hash;
+    std::string digest, str_hex;
+    
+    //digest is 56 hex numbers, or 28 pairs of hex numbers = 28 bytes
+    //compute the digest and keep 8 bytes of it
+    CryptoPP::StringSource(msg, true, new CryptoPP::HashFilter(hash, new CryptoPP::StringSink(digest), false, 8));
+    CryptoPP::CRYPTOPP_DLL HexEncoder encoder_out(new CryptoPP::StringSink(str_hex));
+    CryptoPP::StringSource(digest, true, new CryptoPP::Redirector(encoder_out));
+    return str_hex;
+  }
+  
 }
 
 namespace mu2e {
@@ -70,6 +90,7 @@ namespace mu2e {
     m_steppingVerbose(true),
     m_mtDebugOutput(conf.debug().mtDebugOutput()),
     rmvlevel_(conf.debug().diagLevel()),
+    salt_(conf.salt()),
     perThreadObjects_(std::make_unique<Mu2eG4PerThreadStorage>()),
     masterRM(nullptr),
     workerID_(worker_ID),
@@ -84,15 +105,17 @@ namespace mu2e {
     steppingCuts_(createMu2eG4Cuts(conf.Mu2eG4SteppingOnlyCut.get<fhicl::ParameterSet>(), mu2elimits_)),
     commonCuts_(createMu2eG4Cuts(conf.Mu2eG4CommonCut.get<fhicl::ParameterSet>(), mu2elimits_))
   {
+
     if (m_mtDebugOutput > 0) {
       G4cout << "WorkerRM on thread " << workerID_ << " is being created\n!";
       //to see random number seeds for each event and other verbosity, uncomment this
-      SetPrintProgress(1);
+      //SetPrintProgress(1);
     }
   }
 
   // Destructor of base is called automatically.  No need to do anything.
   Mu2eG4WorkerRunManager::~Mu2eG4WorkerRunManager(){
+    
     if (m_mtDebugOutput > 0) {
       G4cout << "WorkerRM on thread " << workerID_ << " is being destroyed\n!";
     }
@@ -111,22 +134,6 @@ namespace mu2e {
 
     const CLHEP::HepRandomEngine* masterEngine = masterRM->getMasterRandomEngine();
     masterRM->GetUserWorkerThreadInitialization()->SetupRNGEngine(masterEngine);
-
-    //perThreadObjects_->UserActionInit->InitializeSteppingVerbose()
-    if(m_steppingVerbose) {
-
-      //if(masterRM->GetUserActionInitialization())
-      //{
-      //    G4VSteppingVerbose* sv = masterRM->GetUserActionInitialization()->InitializeSteppingVerbose();
-      //    if ( sv ) { G4VSteppingVerbose::SetInstance(sv); }
-      //}
-
-      //WE CANNOT INSTANTIATE THIS ONE RIGHT NOW SINCE WE ALREADY HAVE ONE
-      //perThreadObjects_->steppingVerbose = new SteppingVerbose();
-      //SteppingVerbose* sv = perThreadObjects_->steppingVerbose;
-      //if (sv)
-      //    SteppingVerbose::SetInstance(sv);
-    }
 
     // Initialize worker part of shared resources (geometry, physics)
     G4WorkerThread::BuildGeometryAndPhysicsVector();
@@ -281,10 +288,12 @@ namespace mu2e {
     
     runIsSeeded = false;
     eventLoopOnGoing = true;
-    G4int i_event = event->id().event();
-        
+    std::string i_event = to_string(event->id().event());
+    std::string i_subrun = to_string(event->id().subRun());
+    std::string i_run = to_string(event->id().run());
+    
     // below code is from ProcessOneEvent(i_event);
-     currentEvent = generateEvt(i_event);
+     currentEvent = generateEvt(i_event, i_subrun, i_run);
     
      if(eventLoopOnGoing) {
      eventManager->ProcessOneEvent(currentEvent);
@@ -294,15 +303,14 @@ namespace mu2e {
   }
   
   
-  G4Event* Mu2eG4WorkerRunManager::generateEvt(G4int i_event){
+  G4Event* Mu2eG4WorkerRunManager::generateEvt(std::string i_event, std::string i_subrun, std::string i_run){
     
-    G4Event* anEvent = new G4Event(i_event);
+    G4Event* anEvent = new G4Event(std::stoi(i_event));
     long s1 = 0;
     long s2 = 0;
-    long s3 = 0;
     G4bool eventHasToBeSeeded = true;
     
-    eventLoopOnGoing = G4MTRunManager::GetMasterRunManager()->SetUpAnEvent(anEvent,s1,s2,s3,eventHasToBeSeeded);
+    eventLoopOnGoing = masterRM->SetUpEvent();
     runIsSeeded = true;
     
     if(!eventLoopOnGoing)
@@ -313,7 +321,14 @@ namespace mu2e {
     
     if(eventHasToBeSeeded)
     {
-      long seeds[3] = { s1, s2, 0 };
+      std::string msg = "r" + i_run + "s" + i_subrun + "e" + i_event + salt_;
+
+      std::string hash_out = CryptoPP_Hash(msg);
+      std::vector<std::string> randnumstrings = {hash_out.substr(0,8), hash_out.substr(8,8)};
+ 
+      long rn1 = std::stol(randnumstrings[0],nullptr,16);
+      long rn2 = std::stol(randnumstrings[1],nullptr,16);
+      long seeds[3] = { rn1, rn2, 0 };
       G4Random::setTheSeeds(seeds,-1);
       runIsSeeded = true;
     }
@@ -356,7 +371,7 @@ namespace mu2e {
     
     if(printModulo > 0 && anEvent->GetEventID()%printModulo == 0 ) {
       G4cout << "--> Event " << anEvent->GetEventID() << " starts";
-      if(eventHasToBeSeeded) {
+      if(eventHasToBeSeeded && m_mtDebugOutput > 1) {
         G4cout << " with initial seeds (" << s1 << "," << s2 << ")";
       }
       G4cout << "." << G4endl;
