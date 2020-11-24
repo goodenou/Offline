@@ -8,6 +8,7 @@
 // Contact person Rob Kutschke
 //
 
+#include <atomic>
 #include <iosfwd>
 #include <string>
 #include <vector>
@@ -45,25 +46,25 @@ class SimpleConfigRecord {
    *
    * @return A copy of the raw record.
    */
-  std::string getRecord() const { return record; }
+  std::string const& getRecord() const { return record; }
 
   /**
    * Returns the type field of this record.
    * @return The type.
    */
-  std::string getType () const { return Type; }
+  std::string const& getType () const { return Type; }
 
   /**
    * Returns the variable name field of this record.
    * @return The variable name.
    */
-  std::string getName () const { return Name; }
+  std::string const& getName () const { return Name; }
 
   /**
    * Returns the comment field, if any, of this record.
    * @return The comment, if any, that is part of this record.
    */
-  std::string getComment() const { return comment; }
+  std::string const& getComment() const { return comment; }
 
   /**
    * Returns true if the record contains nothing more than a comment or if the
@@ -204,7 +205,7 @@ private:
   std::vector<std::string> Values;
 
   // State data.
-  mutable int _accessCount;
+  mutable std::atomic<int> _accessCount;
   bool _isCommentOrBlank;
   bool _isVector;
   bool _superceded;

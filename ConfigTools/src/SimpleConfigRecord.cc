@@ -7,12 +7,27 @@
 #include "ConfigTools/src/SimpleConfigRecord.hh"
 #include "GeneralUtilities/inc/trimInPlace.hh"
 
+#include "cetlib/container_algorithms.h"
 #include "cetlib_except/exception.h"
 
+#include <cassert>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
 #include <algorithm>
+
+using namespace std;
+
+namespace {
+    // Define known types.
+  vector<string> const types{"bool",
+                             "double",
+                             "int",
+                             "string",
+                             "vector<double>",
+                             "vector<int>",
+                             "vector<string>"};
+}
 
 namespace mu2e {
 
@@ -33,8 +48,6 @@ namespace mu2e {
   // 1) Warnings for:
   //    int i = 1.23;
   // 2)
-
-  using namespace std;
 
   // Constructor.
   SimpleConfigRecord::SimpleConfigRecord( const string& record_a ):
@@ -715,22 +728,9 @@ namespace mu2e {
   }
 
   void SimpleConfigRecord::KnownType() const {
-
-    // Define known types.
-    static vector<string> types;
-    if ( types.size() == 0 ){
-      types.push_back("string");
-      types.push_back("int");
-      types.push_back("double");
-      types.push_back("bool");
-      types.push_back("vector<string>");
-      types.push_back("vector<int>");
-      types.push_back("vector<double>");
-    }
-
-    for ( vector<string>::size_type i=0;
-          i<types.size(); ++i ){
-      if ( Type == types[i] ) return;
+    assert(is_sorted(cbegin(types), cend(types)));
+    if (cet::binary_search_all(types, Type)) {
+      return;
     }
 
     // Test: fail02.conf

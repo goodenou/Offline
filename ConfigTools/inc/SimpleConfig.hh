@@ -24,6 +24,7 @@
 // C++ includes
 #include <cstdlib>
 #include <map>
+#include <mutex>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -357,7 +358,22 @@ namespace mu2e {
   private:
 
     // A type used for some internal record keeping.
-    typedef std::map<std::string, int> DefaultCounter_type;
+    typedef std::unique_ptr<std::atomic<int>> Counter_t;
+    typedef std::map<std::string, Counter_t> CounterMap_t;
+
+    /**
+     * Record the name of records for which the default was taken;
+     * keep a count of how often each name was asked for.  As the use
+     * of this template is intended to be internal to the SimpleConfig
+     * class, we provide the template implementation in the .cc file.
+     */
+    template <class T>
+    void markDefault ( std::string const& rtype,
+                       std::string const& name,
+                       T const& t,
+                       bool print ) const;
+
+    std::atomic<int>& insertEntry(std::string const& record_name) const;
 
     // input file string
     std::string _inputFileString;
@@ -394,9 +410,11 @@ namespace mu2e {
     Image_type _image;
 
     // Record the names of records that were not found in the file and
-    // for which the default value was returned, count the number of times
-    // each was requested.
-    mutable DefaultCounter_type _defaultCounter;
+    // for which the default value was returned, count the number of
+    // times each was requested.  N.B. Accessing the _counters data
+    // member requires locking to avoid data races.
+    mutable std::mutex _mutex;
+    mutable CounterMap_t _counters;
 
     // Private methods.
 

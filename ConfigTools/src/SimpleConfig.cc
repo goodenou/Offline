@@ -120,12 +120,12 @@ namespace mu2e {
    * @return the value of the parameter.
    */
   template <class T>
-  void markDefault ( std::string const& rtype,
+  void
+  SimpleConfig::markDefault ( std::string const& rtype,
                      std::string const& name,
                      T const& t,
-                     SimpleConfig::DefaultCounter_type& counter,
-                     bool print ){
-    int& count(counter[name]);
+                              bool print ) const {
+    auto& count = insertEntry(name);
     ++count;
     if ( print ){
       ostringstream os;
@@ -140,6 +140,15 @@ namespace mu2e {
     }
   }
 
+  std::atomic<int>&
+  SimpleConfig::insertEntry(std::string const& name) const
+  {
+    std::lock_guard guard{_mutex};
+    auto [it, succeeded] = _counters.emplace(name,
+                                             std::make_unique<std::atomic<int>>());
+    return *it->second;
+  }
+
   /**
    * Get a specified parameter as a string, if not present in the file
    * return the value specified by the second argument.
@@ -152,7 +161,7 @@ namespace mu2e {
     if ( getSharedPointer(name,b) ){
       return b->getString();
     }
-    markDefault ( "string ", name, def, _defaultCounter, _messageOnDefault );
+    markDefault ( "string ", name, def, _messageOnDefault );
     return def;
   }
 
@@ -176,7 +185,7 @@ namespace mu2e {
     if ( getSharedPointer(name,b) ){
       return b->getInt();
     }
-    markDefault ( "int ", name, def, _defaultCounter, _messageOnDefault );
+    markDefault ( "int ", name, def, _messageOnDefault );
     return def;
   }
 
@@ -200,7 +209,7 @@ namespace mu2e {
     if ( getSharedPointer(name,b) ){
       return b->getDouble();
     }
-    markDefault ( "double ", name, def, _defaultCounter, _messageOnDefault );
+    markDefault ( "double ", name, def, _messageOnDefault );
     return def;
   }
 
@@ -225,7 +234,7 @@ namespace mu2e {
     if ( getSharedPointer(name,b) ){
       return b->getBool();
     }
-    markDefault ( "bool ", name, def, _defaultCounter, _messageOnDefault );
+    markDefault ( "bool ", name, def, _messageOnDefault );
     return def;
   }
 
@@ -286,7 +295,7 @@ namespace mu2e {
     // Assign the default value;
     v = vdefault;
 
-    markDefault ( "vector<string> ", name, v, _defaultCounter, _messageOnDefault );
+    markDefault ( "vector<string> ", name, v, _messageOnDefault );
 
   }
 
@@ -347,7 +356,7 @@ namespace mu2e {
     // Assign the default value;
     v = vdefault;
 
-    markDefault ( "vector<int> ", name, v, _defaultCounter, _messageOnDefault );
+    markDefault ( "vector<int> ", name, v, _messageOnDefault );
   }
 
 
@@ -411,7 +420,7 @@ namespace mu2e {
     // Assign the default value;
     v = vdefault;
 
-    markDefault ( "vector<double> ", name, v, _defaultCounter, _messageOnDefault );
+    markDefault ( "vector<double> ", name, v, _messageOnDefault );
   }
 
   CLHEP::Hep3Vector SimpleConfig::getHep3Vector ( const std::string& name ) const{
@@ -1067,12 +1076,12 @@ namespace mu2e {
 
     ost << setw(headerWidth) << "Count  Name" << endl;
 
-    for ( DefaultCounter_type::const_iterator i=_defaultCounter.begin(), e=_defaultCounter.end();
-          i != e; ++i ){
+    std::lock_guard guard{_mutex};
+    for (auto const& [name, counter] : _counters) {
       ost << header
           << tag
-          << setw(countFieldWidth) << i->second << "  "
-          << i->first
+          << setw(countFieldWidth) << *counter << "  "
+          << name
           << endl;
     }
   }
