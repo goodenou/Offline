@@ -13,12 +13,12 @@
 #include "cetlib_except/exception.h"
 #include "cstddef"
 
-//#include "/mu2e/app/users/goodenou/cryptopp/sha3.h"
-//#include "/mu2e/app/users/goodenou/cryptopp/hex.h"
-//#include "/mu2e/app/users/goodenou/cryptopp/files.h"
-#include "sha.h"
-#include "hex.h"
-#include "files.h"
+#include "/mu2e/app/users/goodenou/cryptopp/sha3.h"
+#include "/mu2e/app/users/goodenou/cryptopp/hex.h"
+#include "/mu2e/app/users/goodenou/cryptopp/files.h"
+//#include "sha.h"
+//#include "hex.h"
+//#include "files.h"
 
 #include <string>
 
